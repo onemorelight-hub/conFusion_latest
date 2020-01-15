@@ -5,23 +5,32 @@ import { Observable } from 'rxjs';
 import { of } from 'rxjs';
 import { delay } from 'rxjs/operators';
 
+import { HttpClient } from '@angular/common/http';
+
+import { map, catchError } from 'rxjs/operators';
+import { ProcessHTTPMsgService } from '../services/process-httpmsg.service'
+import { baseURL } from '../shared/baseurl';
+
+
 @Injectable({
   providedIn: 'root'
 })
 export class PromotionService {
 
-  constructor() { }
+  constructor(private httpClient: HttpClient,
+    private processHTTPMsgService:ProcessHTTPMsgService) { }
 
   getPromotions(): Observable<Promotion[]> {
-    return of(PROMOTIONS).pipe(delay(2000));
+    return this.httpClient.get<Promotion[]>(baseURL + 'promotions').pipe(catchError(this.processHTTPMsgService.handleError));
+
   }
 
   getPromotion(id: string): Observable<Promotion> {
-    return of(PROMOTIONS.filter((promo) => (promo.id === id))[0]).pipe(delay(2000));
-    
+    return this.httpClient.get<Promotion>(baseURL + 'promotions/' + id)
+    .pipe(catchError(this.processHTTPMsgService.handleError));    
   }
 
   getFeaturedPromotion(): Observable<Promotion> {
-    return of(PROMOTIONS.filter((promotion) => promotion.featured)[0]).pipe(delay(2000));
-  }
+    return this.httpClient.get<Promotion[]>(baseURL + 'promotions?featured=true').pipe(map(leaders => leaders[0]))
+    .pipe(catchError(this.processHTTPMsgService.handleError));;  }
 }

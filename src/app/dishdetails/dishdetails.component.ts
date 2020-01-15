@@ -9,26 +9,31 @@ import { switchMap } from 'rxjs/operators';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Comment } from '../shared/comment';
 
+import { visibility, expand } from '../animations/app.animation';
+
 
 @Component({
   selector: 'app-dishdetails',
   templateUrl: './dishdetails.component.html',
-  styleUrls: ['./dishdetails.component.scss']
+  styleUrls: ['./dishdetails.component.scss'],
+
+  animations: [
+    visibility(),
+    expand()
+  ]
 })
 export class DishdetailsComponent implements OnInit {
 
   commentForm: FormGroup;
   comment: Comment;
-
   @Input()
   dish: Dish;
-
+  dishcopy: Dish;
   errorMsg: String;
-
   dishIds: string[];
   prev: string;
   next: string;
-
+  visibility = 'shown';
 
   formErrors = {
     'auther': '',
@@ -51,15 +56,18 @@ export class DishdetailsComponent implements OnInit {
     private location: Location, 
     private fb: FormBuilder,
     @Inject('BaseURL') private baseURL) {
-     }
+      this.createForm();
+    }
 
   ngOnInit() {
     const id = this.route.snapshot.params['id'];
+
     this.dishservice.getDish(id).subscribe(dish => this.dish = dish, errorMsg => this.errorMsg = <any>errorMsg);
     this.dishservice.getDishIds().subscribe(dishIds => this.dishIds = dishIds, errorMsg => this.errorMsg = <any>errorMsg);
-    this.route.params.pipe(switchMap((params: Params) => this.dishservice.getDish(params['id'])))
-    .subscribe(dish => { this.dish = dish; this.setPrevNext(dish.id); },  errorMsg => this.errorMsg = <any>errorMsg);
-    this.createForm();
+    
+    this.route.params.pipe(switchMap((params: Params) => { this.visibility = 'hidden'; return this.dishservice.getDish(+params['id']); }))
+    .subscribe(dish => { this.dish = dish; this.dishcopy = dish; this.setPrevNext(dish.id); this.visibility = 'shown'; },
+      errmess => this.errorMsg = <any>errmess);
   }
 
   setPrevNext(dishId: string) {
@@ -82,6 +90,10 @@ export class DishdetailsComponent implements OnInit {
         rating: 5,
       }
     );
+
+    this.dishservice.putDish(this.dishcopy)
+    .subscribe(dish => {this.dish = dish; this.dishcopy = dish;}, errmess => { this.dish = null; this.dishcopy = null; this.errorMsg = <any>errmess; });
+    
   }
 
   createForm(){

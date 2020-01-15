@@ -2,6 +2,8 @@ import { Component, OnInit , ViewChild} from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 
 import { Feedback, ContactType } from '../shared/feedback';
+import { FeedbackService} from '../services/feedback.service';
+import { delay } from 'rxjs/operators';
 
 
 @Component({
@@ -13,7 +15,11 @@ export class ContactComponent implements OnInit {
 
   feedbackForm: FormGroup;
   feedback: Feedback;
+  feedbackCopy: Feedback;
   contactType = ContactType;
+  errorMsg: string;
+  progress=false;
+  submitted=false;
 
 
   formErrors = {
@@ -45,7 +51,8 @@ export class ContactComponent implements OnInit {
   };
 
 
-  constructor(private fb: FormBuilder) {
+  constructor(private fb: FormBuilder,
+    private feedbackService: FeedbackService) {
     this.createForm();
   }
 
@@ -70,7 +77,9 @@ export class ContactComponent implements OnInit {
 
   }
 
-  onSubmit() {
+  onSubmitFeedback() {
+    this.progress = true;
+    this.submitted = true;
     this.feedback = this.feedbackForm.value;
     console.log(this.feedback);
     this.feedbackForm.reset({
@@ -82,6 +91,11 @@ export class ContactComponent implements OnInit {
       contacttype: 'None',
       message: ''
     });
+
+    delay(500);
+    this.feedbackService.postFeedback(this.feedback)
+    .subscribe(feedback => {this.feedbackCopy = feedback; this.progress = false}, errmess => { this.feedbackCopy = null; this.progress = false ; this.errorMsg = <any>errmess; });
+    
   }
 
   onValueChanged(data?: any) {
